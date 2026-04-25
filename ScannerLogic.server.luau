@@ -1,3 +1,20 @@
+--[[
+ROBLOX STUDIO SETUP REQUIRED:
+  1. ScannerDesk
+       - A Part (or Model PrimaryPart) named exactly "ScannerDesk" in Workspace
+       - Add a ProximityPrompt child:
+           ActionText  = "Scan Fish"
+           ObjectText  = "Fish Mogger"
+           MaxDistance = 8
+  2. Aquarium
+       - A Part (or Model PrimaryPart) named exactly "Aquarium" in Workspace
+       - Add a ProximityPrompt child:
+           ActionText  = "Place Fish"
+           ObjectText  = "Aquarium"
+           MaxDistance = 8
+  3. Place this script in ServerScriptService
+]]
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local remotes           = ReplicatedStorage:WaitForChild("Remotes")

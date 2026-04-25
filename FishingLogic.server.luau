@@ -1,3 +1,10 @@
+--[[
+ROBLOX STUDIO SETUP REQUIRED:
+  1. Place this script in ServerScriptService
+  2. No direct Workspace parts needed — FishingRod.client.luau handles
+     click detection on the Water part (see that script's setup note)
+]]
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local remotes         = ReplicatedStorage:WaitForChild("Remotes")

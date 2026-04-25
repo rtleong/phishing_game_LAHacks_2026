@@ -1,3 +1,16 @@
+--[[
+ROBLOX STUDIO SETUP REQUIRED:
+  1. Water / Fishing Zone — pick ONE of these approaches:
+       Option A (Part):  Add a Part to Workspace named exactly "Water".
+                         Set its material to Water and make it semi-transparent.
+                         Place it at the end of the pier over the ocean.
+       Option B (Terrain): Use Roblox Terrain water. The script raycasts for
+                           Enum.Material.Water automatically — no extra setup needed.
+       Option C (Tag):   Name any clickable part whatever you like, then open
+                         CollectionService in Studio and add the tag "FishingZone" to it.
+  2. Place this script in StarterPlayerScripts
+]]
+
 local Players           = game:GetService("Players")
 local UserInputService  = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
