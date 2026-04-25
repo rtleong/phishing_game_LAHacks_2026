@@ -1,15 +1,3 @@
---[[
-ROBLOX STUDIO SETUP REQUIRED:
-  1. Fish Mogger NPC
-       - Insert a humanoid NPC Model into Workspace named exactly "Fish Mogger"
-       - The model must contain: Humanoid, Torso (classic R6 rig)
-       - Recommended: use a free NPC model from the Creator Marketplace and rename it
-       - Optional: add a Golden Retriever free model as a child for flavor
-  2. Place this script inside the "Fish Mogger" model as a Script,
-     OR place it in ServerScriptService (it will find the NPC by name either way)
-  NOTE: This script is marked .legacy because scammer NPCs reuse the same
-        wander logic in ScammerAI.server.luau. Keep this for the Mogger NPC only.
-]]
 
 -- Fisherman NPC Wandering Script
 -- Makes the Fisherman walk around in a confined area
