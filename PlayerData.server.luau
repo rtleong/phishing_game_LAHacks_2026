@@ -90,17 +90,14 @@ end
 
 -- Passive coin loop: awards coins every 30s based on aquarium contents
 local function startCoinLoop(player)
+	-- Original fish loop (every 30 seconds)
 	task.spawn(function()
 		while player.Parent do
-			
-			
 			task.wait(30)
 			local data = playerData[player.UserId]
 			if not data then break end
-
 			local earned = 0
 			local virusFishIndex = nil
-
 			for i, fish in ipairs(data.aquarium) do
 				if fish.isVirus then
 					virusFishIndex = i
@@ -108,7 +105,6 @@ local function startCoinLoop(player)
 					earned += fish.coinValue
 				end
 			end
-
 			-- Virus fish deletes one clean fish each tick
 			if virusFishIndex then
 				for i, fish in ipairs(data.aquarium) do
@@ -119,11 +115,21 @@ local function startCoinLoop(player)
 					end
 				end
 			end
-
 			if earned > 0 then
 				data.coins += earned
 				remotes.CoinsUpdated:FireClient(player, data.coins)
 			end
+		end
+	end)
+
+	-- Passive +1 coin every second
+	task.spawn(function()
+		while player.Parent do
+			task.wait(1)
+			local data = playerData[player.UserId]
+			if not data then break end
+			data.coins += 1
+			remotes.CoinsUpdated:FireClient(player, data.coins)
 		end
 	end)
 end
@@ -206,15 +212,43 @@ rfRemoveFish.OnServerInvoke = function(player, fish)
 	return true
 end
 
--- Expose rollFish so FishingLogic can call it from the same server context
--- by requiring this module — but since .server scripts aren't requireable,
--- we store it in a shared table on script globals instead.
--- FishingLogic should call rfRemoveFish via server-side direct invocation pattern;
--- for now, expose rollFish through a BindableFunction.
+-- BindableFunctions for server-to-server calls from other server scripts
+
 local bfRollFish = Instance.new("BindableFunction")
 bfRollFish.Name = "RollFish"
 bfRollFish.Parent = ReplicatedStorage
-
 bfRollFish.OnInvoke = function(rodTier)
 	return rollFish(rodTier)
+end
+
+-- FishingLogic calls this to add a caught fish to inventory
+local bfAddToInventory = Instance.new("BindableFunction")
+bfAddToInventory.Name = "AddToInventory"
+bfAddToInventory.Parent = ReplicatedStorage
+bfAddToInventory.OnInvoke = function(player, fish)
+	local data = playerData[player.UserId]
+	if not data then return false end
+	table.insert(data.inventory, fish)
+	return true
+end
+
+-- FishingLogic calls this to read a player's current rod tier
+local bfGetRodTier = Instance.new("BindableFunction")
+bfGetRodTier.Name = "GetRodTier"
+bfGetRodTier.Parent = ReplicatedStorage
+bfGetRodTier.OnInvoke = function(player)
+	local data = playerData[player.UserId]
+	return data and data.rodTier or 1
+end
+
+-- ScammerAI calls this to deduct coins on scam accept
+local bfDeductCoins = Instance.new("BindableFunction")
+bfDeductCoins.Name = "DeductCoins"
+bfDeductCoins.Parent = ReplicatedStorage
+bfDeductCoins.OnInvoke = function(player, amount)
+	local data = playerData[player.UserId]
+	if not data then return false end
+	data.coins = math.max(0, data.coins - amount)
+	remotes.CoinsUpdated:FireClient(player, data.coins)
+	return data.coins
 end
