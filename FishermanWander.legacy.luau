@@ -1,3 +1,4 @@
+
 -- Fisherman NPC Wandering Script
 -- Makes the Fisherman walk around in a confined area
 

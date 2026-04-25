@@ -89,18 +89,15 @@ local function rollFish(rodTier)
 end
 
 -- Passive coin loop: awards coins every 30s based on aquarium contents
-local function startCoinLoop(player)
+local function startCoinLoop(player, coinsValue)
+	-- Original fish loop (every 30 seconds)
 	task.spawn(function()
 		while player.Parent do
-			
-			
 			task.wait(30)
 			local data = playerData[player.UserId]
 			if not data then break end
-
 			local earned = 0
 			local virusFishIndex = nil
-
 			for i, fish in ipairs(data.aquarium) do
 				if fish.isVirus then
 					virusFishIndex = i
@@ -108,7 +105,6 @@ local function startCoinLoop(player)
 					earned += fish.coinValue
 				end
 			end
-
 			-- Virus fish deletes one clean fish each tick
 			if virusFishIndex then
 				for i, fish in ipairs(data.aquarium) do
@@ -119,19 +115,46 @@ local function startCoinLoop(player)
 					end
 				end
 			end
-
 			if earned > 0 then
 				data.coins += earned
+				coinsValue.Value = data.coins
 				remotes.CoinsUpdated:FireClient(player, data.coins)
 			end
 		end
 	end)
+
+	-- Passive +1 coin every second
+	task.spawn(function()
+		while player.Parent do
+			task.wait(1)
+			local data = playerData[player.UserId]
+			if not data then break end
+			data.coins += 1
+			coinsValue.Value = data.coins
+			remotes.CoinsUpdated:FireClient(player, data.coins)
+		end
+	end)
+end
+
+-- Create leaderstats for a player
+local function createLeaderstats(player, initialCoins)
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+	leaderstats.Parent = player
+	
+	local coinsValue = Instance.new("IntValue")
+	coinsValue.Name = "Coins"
+	coinsValue.Value = initialCoins
+	coinsValue.Parent = leaderstats
+	
+	return coinsValue
 end
 
 -- Player join/leave
 Players.PlayerAdded:Connect(function(player)
 	playerData[player.UserId] = newPlayerData()
-	startCoinLoop(player)
+	local coinsValue = createLeaderstats(player, 0)
+	startCoinLoop(player, coinsValue)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
@@ -141,7 +164,8 @@ end)
 -- Seed data for players already in-game when this script loads
 for _, player in ipairs(Players:GetPlayers()) do
 	playerData[player.UserId] = newPlayerData()
-	startCoinLoop(player)
+	local coinsValue = createLeaderstats(player, 0)
+	startCoinLoop(player, coinsValue)
 end
 
 -- RemoteFunction handlers
@@ -154,6 +178,16 @@ rfAddCoins.OnServerInvoke = function(player, amount)
 	local data = playerData[player.UserId]
 	if not data then return false end
 	data.coins = math.max(0, data.coins + amount)
+	
+	-- Update leaderstats
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local coinsValue = leaderstats:FindFirstChild("Coins")
+		if coinsValue then
+			coinsValue.Value = data.coins
+		end
+	end
+	
 	remotes.CoinsUpdated:FireClient(player, data.coins)
 	return data.coins
 end
@@ -169,6 +203,16 @@ rfSetRod.OnServerInvoke = function(player, tier)
 
 	data.coins -= price
 	data.rodTier = tier
+	
+	-- Update leaderstats
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local coinsValue = leaderstats:FindFirstChild("Coins")
+		if coinsValue then
+			coinsValue.Value = data.coins
+		end
+	end
+	
 	remotes.CoinsUpdated:FireClient(player, data.coins)
 	return true
 end
@@ -206,15 +250,71 @@ rfRemoveFish.OnServerInvoke = function(player, fish)
 	return true
 end
 
--- Expose rollFish so FishingLogic can call it from the same server context
--- by requiring this module — but since .server scripts aren't requireable,
--- we store it in a shared table on script globals instead.
--- FishingLogic should call rfRemoveFish via server-side direct invocation pattern;
--- for now, expose rollFish through a BindableFunction.
+-- BindableFunctions for server-to-server calls from other server scripts
+
 local bfRollFish = Instance.new("BindableFunction")
 bfRollFish.Name = "RollFish"
 bfRollFish.Parent = ReplicatedStorage
-
 bfRollFish.OnInvoke = function(rodTier)
 	return rollFish(rodTier)
+end
+
+-- FishingLogic calls this to add a caught fish to inventory
+local bfAddToInventory = Instance.new("BindableFunction")
+bfAddToInventory.Name = "AddToInventory"
+bfAddToInventory.Parent = ReplicatedStorage
+bfAddToInventory.OnInvoke = function(player, fish)
+	local data = playerData[player.UserId]
+	if not data then return false end
+	table.insert(data.inventory, fish)
+	return true
+end
+
+-- FishingLogic calls this to read a player's current rod tier
+local bfGetRodTier = Instance.new("BindableFunction")
+bfGetRodTier.Name = "GetRodTier"
+bfGetRodTier.Parent = ReplicatedStorage
+bfGetRodTier.OnInvoke = function(player)
+	local data = playerData[player.UserId]
+	return data and data.rodTier or 1
+end
+
+-- ScammerAI calls this to deduct coins on scam accept
+local bfDeductCoins = Instance.new("BindableFunction")
+bfDeductCoins.Name = "DeductCoins"
+bfDeductCoins.Parent = ReplicatedStorage
+bfDeductCoins.OnInvoke = function(player, amount)
+	local data = playerData[player.UserId]
+	if not data then return false end
+	data.coins = math.max(0, data.coins - amount)
+	remotes.CoinsUpdated:FireClient(player, data.coins)
+	return data.coins
+end
+
+-- ScannerLogic calls this to scan the first inventory fish server-side
+local bfScanFishServer = Instance.new("BindableFunction")
+bfScanFishServer.Name = "ScanFishServer"
+bfScanFishServer.Parent = ReplicatedStorage
+bfScanFishServer.OnInvoke = function(player)
+	local data = playerData[player.UserId]
+	if not data or #data.inventory == 0 then return nil end
+	local fish = data.inventory[1]
+	fish.isScanned = true
+	return fish
+end
+
+-- ScannerLogic calls this to move a scanned fish into the aquarium server-side
+local bfPlaceFishServer = Instance.new("BindableFunction")
+bfPlaceFishServer.Name = "PlaceFishServer"
+bfPlaceFishServer.Parent = ReplicatedStorage
+bfPlaceFishServer.OnInvoke = function(player, fishIndex)
+	local data = playerData[player.UserId]
+	if not data then return false, "No player data" end
+	fishIndex = fishIndex or 1
+	local fish = data.inventory[fishIndex]
+	if not fish then return false, "No fish in inventory" end
+	if not fish.isScanned then return false, "Fish has not been scanned yet" end
+	table.remove(data.inventory, fishIndex)
+	table.insert(data.aquarium, fish)
+	return true, fish
 end
