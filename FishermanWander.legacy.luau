@@ -2,10 +2,10 @@
 -- Fisherman NPC Wandering Script
 -- Makes the Fisherman walk around in a confined area
 
-local fisherman = game.Workspace:FindFirstChild("Fish Mogger")
+local fisherman = game.Workspace:FindFirstChild("FishMogger")
 
 if not fisherman then
-    warn("Fish Mogger not found in Workspace")
+    warn("FishMogger not found in Workspace")
     return
 end
 

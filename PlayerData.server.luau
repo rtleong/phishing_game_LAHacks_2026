@@ -28,6 +28,8 @@ makeRemoteEvent("PlaceFishInTank")
 makeRemoteEvent("VirusSpread")
 makeRemoteEvent("ScamEvent")
 makeRemoteEvent("CoinsUpdated")
+makeRemoteEvent("ShopOpened")    -- server → client: open the shop UI
+makeRemoteEvent("RodUpgraded")   -- server → client: confirm purchase and new tier
 
 -- Functions (client → server requests)
 local rfGetData    = makeRemoteFunction("GetPlayerData")
@@ -289,6 +291,26 @@ bfDeductCoins.OnInvoke = function(player, amount)
 	data.coins = math.max(0, data.coins - amount)
 	remotes.CoinsUpdated:FireClient(player, data.coins)
 	return data.coins
+end
+
+-- ShopLogic calls this to set rod tier after a validated purchase
+local bfSetRodTierServer = Instance.new("BindableFunction")
+bfSetRodTierServer.Name = "SetRodTierServer"
+bfSetRodTierServer.Parent = ReplicatedStorage
+bfSetRodTierServer.OnInvoke = function(player, tier)
+	local data = playerData[player.UserId]
+	if not data then return false end
+	data.rodTier = tier
+	return true
+end
+
+-- ShopLogic calls this to read coin balance for purchase validation
+local bfGetCoins = Instance.new("BindableFunction")
+bfGetCoins.Name = "GetCoins"
+bfGetCoins.Parent = ReplicatedStorage
+bfGetCoins.OnInvoke = function(player)
+	local data = playerData[player.UserId]
+	return data and data.coins or 0
 end
 
 -- ScannerLogic calls this to scan the first inventory fish server-side
