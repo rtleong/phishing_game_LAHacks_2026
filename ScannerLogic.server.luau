@@ -1,24 +1,49 @@
--- 1. Map out your variables (Find the objects)
-local workspace = game:GetService("Workspace")
-local scannerDesk = workspace:WaitForChild("ScannerDesk")
-local prompt = scannerDesk:WaitForChild("ProximityPrompt")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- 2. Write the Function (The action that will happen)
--- The prompt automatically passes the 'player' who pressed E into the function.
-local function onScanTriggered(player)
-	-- Print a message to your Output window to test if it works
-	print(player.Name .. " is scanning a fish!")
-	
-	-- Change the desk color to simulate a scan
-	scannerDesk.BrickColor = BrickColor.new("Bright green")
-	
-	-- Wait for 2 seconds
-	task.wait(2)
-	
-	-- Return the desk to its normal color
+local remotes           = ReplicatedStorage:WaitForChild("Remotes")
+local reScanResult      = remotes:WaitForChild("ScanResult")
+local rePlaceFishInTank = remotes:WaitForChild("PlaceFishInTank")
+
+local bfScanFishServer  = ReplicatedStorage:WaitForChild("ScanFishServer")
+local bfPlaceFishServer = ReplicatedStorage:WaitForChild("PlaceFishServer")
+
+local scannerDesk    = workspace:WaitForChild("ScannerDesk")
+local moggerPrompt   = scannerDesk:WaitForChild("ProximityPrompt")
+
+local aquariumPart   = workspace:WaitForChild("Aquarium")
+local aquariumPrompt = aquariumPart:WaitForChild("ProximityPrompt")
+
+local SCAN_DURATION  = 2.5
+local scanningActive = {}  -- [userId] = true while scan animation plays
+
+-- Fish Mogger scan
+moggerPrompt.Triggered:Connect(function(player)
+	if scanningActive[player.UserId] then return end
+	scanningActive[player.UserId] = true
+
+	scannerDesk.BrickColor = BrickColor.new("Bright yellow")
+	task.wait(SCAN_DURATION)
+
+	local fish = bfScanFishServer:Invoke(player)
+
+	if fish then
+		scannerDesk.BrickColor = fish.isVirus
+			and BrickColor.new("Bright red")
+			or  BrickColor.new("Bright green")
+	else
+		scannerDesk.BrickColor = BrickColor.new("Medium stone grey")
+	end
+
+	reScanResult:FireClient(player, fish)
+
+	task.wait(1.5)
 	scannerDesk.BrickColor = BrickColor.new("Medium stone grey")
-end
+	scanningActive[player.UserId] = nil
+end)
 
--- 3. Connect the Event to the Function
--- When the prompt is triggered, run the function we just wrote.
-prompt.Triggered:Connect(onScanTriggered)
+-- Aquarium placement
+aquariumPrompt.Triggered:Connect(function(player)
+	local ok, result = bfPlaceFishServer:Invoke(player)
+	-- result is the fish table on success, or an error string on failure
+	rePlaceFishInTank:FireClient(player, ok, ok and result or nil, not ok and result or nil)
+end)

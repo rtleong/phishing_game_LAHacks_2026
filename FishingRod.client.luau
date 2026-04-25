@@ -86,13 +86,42 @@ local function showPopup(text, color, duration)
 	end)
 end
 
--- Detect if the mouse is clicking on a part named "Water" (or tagged as water)
+-- Detect if the mouse is clicking on water (parts or terrain)
 local function isClickingWater()
+	-- First check for parts named "Water" or tagged as "FishingZone"
 	local target = mouse.Target
-	if not target then return false end
-	return target.Name == "Water"
-		or (target.Parent and target.Parent.Name == "Water")
-		or target:HasTag("FishingZone")
+	if target then
+		if target.Name == "Water"
+			or (target.Parent and target.Parent.Name == "Water")
+			or target:HasTag("FishingZone") then
+			return true
+		end
+	end
+	
+	-- If no part found, check for terrain water using raycasting
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.FilterDescendantsInstances = {player.Character} -- Ignore player's character
+	
+	-- Cast ray from camera through mouse position
+	local ray = camera:ScreenPointToRay(mouse.X, mouse.Y)
+	local rayResult = workspace:Raycast(ray.Origin, ray.Direction * 1000, rayParams)
+	
+	if rayResult then
+		-- Check if we hit terrain water
+		local material = rayResult.Material
+		if material == Enum.Material.Water then
+			return true
+		end
+		
+		-- Also check if we hit a part that's water
+		local hitPart = rayResult.Instance
+		if hitPart and (hitPart.Name == "Water" or hitPart.Material == Enum.Material.Water) then
+			return true
+		end
+	end
+	
+	return false
 end
 
 -- Cast attempt on left click

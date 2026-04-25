@@ -89,7 +89,7 @@ local function rollFish(rodTier)
 end
 
 -- Passive coin loop: awards coins every 30s based on aquarium contents
-local function startCoinLoop(player)
+local function startCoinLoop(player, coinsValue)
 	-- Original fish loop (every 30 seconds)
 	task.spawn(function()
 		while player.Parent do
@@ -117,6 +117,7 @@ local function startCoinLoop(player)
 			end
 			if earned > 0 then
 				data.coins += earned
+				coinsValue.Value = data.coins
 				remotes.CoinsUpdated:FireClient(player, data.coins)
 			end
 		end
@@ -129,15 +130,31 @@ local function startCoinLoop(player)
 			local data = playerData[player.UserId]
 			if not data then break end
 			data.coins += 1
+			coinsValue.Value = data.coins
 			remotes.CoinsUpdated:FireClient(player, data.coins)
 		end
 	end)
 end
 
+-- Create leaderstats for a player
+local function createLeaderstats(player, initialCoins)
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+	leaderstats.Parent = player
+	
+	local coinsValue = Instance.new("IntValue")
+	coinsValue.Name = "Coins"
+	coinsValue.Value = initialCoins
+	coinsValue.Parent = leaderstats
+	
+	return coinsValue
+end
+
 -- Player join/leave
 Players.PlayerAdded:Connect(function(player)
 	playerData[player.UserId] = newPlayerData()
-	startCoinLoop(player)
+	local coinsValue = createLeaderstats(player, 0)
+	startCoinLoop(player, coinsValue)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
@@ -147,7 +164,8 @@ end)
 -- Seed data for players already in-game when this script loads
 for _, player in ipairs(Players:GetPlayers()) do
 	playerData[player.UserId] = newPlayerData()
-	startCoinLoop(player)
+	local coinsValue = createLeaderstats(player, 0)
+	startCoinLoop(player, coinsValue)
 end
 
 -- RemoteFunction handlers
@@ -160,6 +178,16 @@ rfAddCoins.OnServerInvoke = function(player, amount)
 	local data = playerData[player.UserId]
 	if not data then return false end
 	data.coins = math.max(0, data.coins + amount)
+	
+	-- Update leaderstats
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local coinsValue = leaderstats:FindFirstChild("Coins")
+		if coinsValue then
+			coinsValue.Value = data.coins
+		end
+	end
+	
 	remotes.CoinsUpdated:FireClient(player, data.coins)
 	return data.coins
 end
@@ -175,6 +203,16 @@ rfSetRod.OnServerInvoke = function(player, tier)
 
 	data.coins -= price
 	data.rodTier = tier
+	
+	-- Update leaderstats
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local coinsValue = leaderstats:FindFirstChild("Coins")
+		if coinsValue then
+			coinsValue.Value = data.coins
+		end
+	end
+	
 	remotes.CoinsUpdated:FireClient(player, data.coins)
 	return true
 end
@@ -251,4 +289,32 @@ bfDeductCoins.OnInvoke = function(player, amount)
 	data.coins = math.max(0, data.coins - amount)
 	remotes.CoinsUpdated:FireClient(player, data.coins)
 	return data.coins
+end
+
+-- ScannerLogic calls this to scan the first inventory fish server-side
+local bfScanFishServer = Instance.new("BindableFunction")
+bfScanFishServer.Name = "ScanFishServer"
+bfScanFishServer.Parent = ReplicatedStorage
+bfScanFishServer.OnInvoke = function(player)
+	local data = playerData[player.UserId]
+	if not data or #data.inventory == 0 then return nil end
+	local fish = data.inventory[1]
+	fish.isScanned = true
+	return fish
+end
+
+-- ScannerLogic calls this to move a scanned fish into the aquarium server-side
+local bfPlaceFishServer = Instance.new("BindableFunction")
+bfPlaceFishServer.Name = "PlaceFishServer"
+bfPlaceFishServer.Parent = ReplicatedStorage
+bfPlaceFishServer.OnInvoke = function(player, fishIndex)
+	local data = playerData[player.UserId]
+	if not data then return false, "No player data" end
+	fishIndex = fishIndex or 1
+	local fish = data.inventory[fishIndex]
+	if not fish then return false, "No fish in inventory" end
+	if not fish.isScanned then return false, "Fish has not been scanned yet" end
+	table.remove(data.inventory, fishIndex)
+	table.insert(data.aquarium, fish)
+	return true, fish
 end
