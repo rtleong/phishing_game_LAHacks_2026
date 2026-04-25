@@ -16,7 +16,6 @@ ROBLOX STUDIO SETUP REQUIRED:
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
 local remotes           = ReplicatedStorage:WaitForChild("Remotes")
 local reScanResult      = remotes:WaitForChild("ScanResult")
 local rePlaceFishInTank = remotes:WaitForChild("PlaceFishInTank")

@@ -1,0 +1,27 @@
+{
+  "name": "PhishTank",
+  "tree": {
+    "$className": "DataModel",
+
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "PlayerData":     { "$path": "PlayerData.server.luau" },
+      "FishingLogic":   { "$path": "FishingLogic.server.luau" },
+      "ScannerLogic":   { "$path": "ScannerLogic.server.luau" },
+      "ScammerAI":      { "$path": "ScammerAI.server.luau" },
+      "ShopLogic":      { "$path": "ShopLogic.server.luau" },
+      "FishermanWander":{ "$path": "FishermanWander.legacy.luau" }
+    },
+
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "FishingRod":  { "$path": "FishingRod.client.luau" },
+        "MoggerGui":   { "$path": "MoggerGui.client.luau" },
+        "ScammerGui":  { "$path": "ScammerGui.client.luau" },
+        "ShopGui":     { "$path": "ShopGui.client.luau" }
+      }
+    }
+  }
+}

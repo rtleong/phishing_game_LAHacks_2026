@@ -44,6 +44,7 @@ local rfRemoveFish = makeRemoteFunction("RemoveFish")
 local FISH_TABLE = {
 	{ name = "Sardine",       rarity = "Common", weights = {70, 50, 25}, coinValue = 1  },
 	{ name = "Mackerel",      rarity = "Common", weights = {60, 45, 20}, coinValue = 1  },
+	{ name = "ClownFish",     rarity = "Rare",   weights = {25, 35, 30}, coinValue = 3  },
 	{ name = "Snapper",       rarity = "Rare",   weights = {25, 35, 30}, coinValue = 3  },
 	{ name = "Tuna",          rarity = "Rare",   weights = {20, 35, 30}, coinValue = 3  },
 	{ name = "Swordfish",     rarity = "Epic",   weights = { 5, 15, 30}, coinValue = 8  },
