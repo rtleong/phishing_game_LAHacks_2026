@@ -45,6 +45,7 @@ resultIcon.Position             = UDim2.new(0, 0, 0, 0)
 resultIcon.BackgroundTransparency = 1
 resultIcon.Font                 = Enum.Font.GothamBold
 resultIcon.TextScaled           = true
+resultIcon.Text                 = ""
 resultIcon.ZIndex               = 12
 resultIcon.Parent               = card
 
@@ -56,6 +57,7 @@ resultTitle.Font                 = Enum.Font.GothamBold
 resultTitle.TextColor3           = Color3.new(1, 1, 1)
 resultTitle.TextScaled           = true
 resultTitle.TextXAlignment       = Enum.TextXAlignment.Left
+resultTitle.Text                 = ""
 resultTitle.ZIndex               = 12
 resultTitle.Parent               = card
 
@@ -67,6 +69,7 @@ resultSub.Font                 = Enum.Font.Gotham
 resultSub.TextColor3           = Color3.fromRGB(190, 200, 220)
 resultSub.TextScaled           = true
 resultSub.TextXAlignment       = Enum.TextXAlignment.Left
+resultSub.Text                 = ""
 resultSub.ZIndex               = 12
 resultSub.Parent               = card
 

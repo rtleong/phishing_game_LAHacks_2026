@@ -1,7 +1,7 @@
 --[[
 ROBLOX STUDIO SETUP REQUIRED:
-  1. ScannerDesk
-       - A Part (or Model PrimaryPart) named exactly "ScannerDesk" in Workspace
+  1. FishMogger
+       - A Part (or Model PrimaryPart) named exactly "FishMogger" in Workspace
        - Add a ProximityPrompt child:
            ActionText  = "Scan Fish"
            ObjectText  = "Fish Mogger"
@@ -16,16 +16,14 @@ ROBLOX STUDIO SETUP REQUIRED:
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
 local remotes           = ReplicatedStorage:WaitForChild("Remotes")
-local reScanResult      = remotes:WaitForChild("ScanResult")
-local rePlaceFishInTank = remotes:WaitForChild("PlaceFishInTank")
+local reScanResult       = remotes:WaitForChild("ScanResult")
+local reOpenAquariumMenu = remotes:WaitForChild("OpenAquariumMenu")
 
 local bfScanFishServer  = ReplicatedStorage:WaitForChild("ScanFishServer")
-local bfPlaceFishServer = ReplicatedStorage:WaitForChild("PlaceFishServer")
 
-local scannerDesk    = workspace:WaitForChild("ScannerDesk")
-local moggerPrompt   = scannerDesk:WaitForChild("ProximityPrompt")
+local fishMogger     = workspace:WaitForChild("FishMogger")
+local moggerPrompt   = fishMogger:WaitForChild("ProximityPrompt")
 
 local aquariumPart   = workspace:WaitForChild("Aquarium")
 local aquariumPrompt = aquariumPart:WaitForChild("ProximityPrompt")
@@ -38,29 +36,27 @@ moggerPrompt.Triggered:Connect(function(player)
 	if scanningActive[player.UserId] then return end
 	scanningActive[player.UserId] = true
 
-	scannerDesk.BrickColor = BrickColor.new("Bright yellow")
+	fishMogger.BrickColor = BrickColor.new("Bright yellow")
 	task.wait(SCAN_DURATION)
 
 	local fish = bfScanFishServer:Invoke(player)
 
 	if fish then
-		scannerDesk.BrickColor = fish.isVirus
+		fishMogger.BrickColor = fish.isVirus
 			and BrickColor.new("Bright red")
 			or  BrickColor.new("Bright green")
 	else
-		scannerDesk.BrickColor = BrickColor.new("Medium stone grey")
+		fishMogger.BrickColor = BrickColor.new("Medium stone grey")
 	end
 
 	reScanResult:FireClient(player, fish)
 
 	task.wait(1.5)
-	scannerDesk.BrickColor = BrickColor.new("Medium stone grey")
+	fishMogger.BrickColor = BrickColor.new("Medium stone grey")
 	scanningActive[player.UserId] = nil
 end)
 
--- Aquarium placement
+-- Aquarium: open fish-picker on the client so the player can choose which fish to place
 aquariumPrompt.Triggered:Connect(function(player)
-	local ok, result = bfPlaceFishServer:Invoke(player)
-	-- result is the fish table on success, or an error string on failure
-	rePlaceFishInTank:FireClient(player, ok, ok and result or nil, not ok and result or nil)
+	reOpenAquariumMenu:FireClient(player)
 end)
